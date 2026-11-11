@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reconstrucción documental — Calle Ancha</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111914;color:#f1f3ed;font:15px system-ui,Arial}
+header{padding:18px 20px;border-bottom:1px solid #39453d}h1{font-size:19px;margin:0}header p{margin:5px 0 0;color:#b7c1b7;font-size:13px}
+main{max-width:1100px;margin:auto;padding:16px;display:grid;grid-template-columns:1fr 260px;gap:16px}
+canvas{width:100%;height:auto;aspect-ratio:16/9;display:block;background:#bac8c6;border-radius:10px}
+aside{background:#1b251f;border:1px solid #39453d;border-radius:10px;padding:14px}
+button{width:100%;padding:10px;margin:4px 0;border:1px solid #58685c;border-radius:7px;background:#2a382e;color:white;cursor:pointer}
+button:hover{background:#394b3d}.active{background:#d5dfca;color:#172019;font-weight:bold}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:7px}.controls button{margin:0}
+#status{font-size:12px;color:#c4d0c1;margin-top:10px}
+p.note{font-size:12px;line-height:1.5;color:#b4beb4}
+footer{max-width:1100px;margin:auto;padding:0 16px 20px;color:#aab5aa;font-size:12px}
+@media(max-width:760px){main{grid-template-columns:1fr}aside{order:2}}
+</style>
+</head>
+<body>
+<header>
+<h1>Reconstrucción documental · Calle Ancha, Montalbán</h1>
+<p>Escenificación visual interactiva · noviembre de 2015</p>
+</header>
+<main>
+<section>
+<canvas id="screen" width="1280" height="720"></canvas>
+<p id="caption">Escena 1 — La aproximación: dos agentes se acercan a una vivienda.</p>
+</section>
+<aside>
+<strong>Escenas</strong>
+<div id="scenes"></div>
+<div class="controls">
+<button id="play">▶ Reproducir</button><button id="pause">Ⅱ Pausar</button>
+</div>
+<button id="export">● Exportar vídeo WebM</button>
+<label for="seek">Progreso</label>
+<input id="seek" type="range" min="0" max="72" value="0" step=".1" style="width:100%">
+<div id="status">Preparado · 00:00 / 01:12</div>
+<p class="note">Animación sencilla dibujada en Canvas 2D. El vídeo se graba en tiempo real desde el navegador. Para grabar, deja terminar la secuencia.</p>
+</aside>
+</main>
+<footer>Recreación ilustrativa y no oficial. Los personajes, el entorno y las acciones son escenográficos y no constituyen una reconstrucción forense ni una afirmación de hechos no verificados.</footer>
+<script>
+const canvas=document.getElementById('screen'),ctx=canvas.getContext('2d');
+const scenes=[
+['La aproximación','Dos agentes caminan por la calle hacia la entrada de una vivienda.'],
+['El ataque','La puerta se abre y ocurre un ataque repentino. Sin heridas gráficas.'],
+['El atrincheramiento','El sospechoso se repliega. Llegan refuerzos y se establece un perímetro.'],
+['La azotea','El sospechoso aparece en la cubierta y los agentes buscan protección.'],
+['El dispositivo policial','Pasan las horas. Se mantiene el perímetro y continúan las gestiones.'],
+['La rendición','El sospechoso sale con las manos levantadas y es detenido.']
+];
+let elapsed=0,playing=false,last=performance.now(),recording=false;
+const $=id=>document.getElementById(id);
+scenes.forEach((s,i)=>{let b=document.createElement('button');b.textContent=(i+1)+'. '+s[0];b.onclick=()=>{playing=false;elapsed=i*12;draw();};$('scenes').appendChild(b)});
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function line(x1,y1,x2,y2,c,w=4){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function person(x,y,uniform=true,pose='stand'){
+ const cloth=uniform?'#354f40':'#514b43';
+ // shadow, legs, body, head
+ ctx.fillStyle='#0003';ctx.beginPath();ctx.ellipse(x,y+2,23,7,0,0,Math.PI*2);ctx.fill();
+ line(x-7,y-22,x-10,y, '#252a27',8);line(x+7,y-22,x+10,y,'#252a27',8);
+ rect(x-13,y-66,26,45,cloth);
+ line(x-12,y-58,x-23,y-35,cloth,8);line(x+12,y-58,x+23,y-35,cloth,8);
+ ctx.fillStyle='#bd9274';ctx.beginPath();ctx.arc(x,y-78,12,0,Math.PI*2);ctx.fill();
+ if(uniform){rect(x-13,y-91,26,5,'#263b30');}
+ if(pose==='hands'){line(x-10,y-58,x-22,y-91,cloth,7);line(x+10,y-58,x+22,y-91,cloth,7);}
+}
+function draw(){
+ const t=elapsed%12, s=Math.min(5,Math.floor(elapsed/12)),p=t/12;
+ // sky and distant village
+ rect(0,0,1280,720,'#b9c8c6');rect(0,400,1280,320,'#77796c');
+ // far houses
+ for(let i=0;i<7;i++){let x=i*205-25;rect(x,230,175,210,i%2?'#e4ddcd':'#d8d2c3');rect(x-5,218,185,18,'#986e53');rect(x+30,285,38,55,'#667a7a');rect(x+105,285,38,55,'#667a7a');}
+ // road and pavements
+ rect(0,440,1280,280,'#454a48');rect(0,430,1280,18,'#b2ab99');rect(0,440,1280,5,'#d4cdbb');
+ for(let x=30;x<1280;x+=170)rect(x,575,75,5,'#bdb9a9');
+ // foreground house
+ rect(830,180,390,265,'#eee7d8');rect(820,168,410,18,'#9a6b50');
+ rect(870,260,75,90,'#5d7777');rect(1085,260,75,90,'#5d7777');
+ rect(970,290,88,155,'#684b36');rect(970,285,88,9,'#d8cbb7');
+ // roof terrace parapet
+ rect(830,165,390,16,'#d8d0c1');rect(830,148,390,17,'#9b6b50');
+ // scene action
+ if(s===0){person(360+p*230,560,true);person(420+p*230,590,true);}
+ if(s===1){person(850,570,true);person(925,590,true);person(1010,570,false);if(p>.25){rect(1020,525,7,4,'#e5c17c');}}
+ if(s===2){person(470,580,true);person(560,600,true);person(670,580,true);person(1030,570,false);person(1100,590,false);policeCar(250,560);policeCar(720,600);}
+ if(s===3){person(470,580,true);person(560,600,true);person(680,580,true);person(1050,145,false);policeCar(250,560);policeCar(720,600);}
+ if(s===4){person(470,580,true);person(560,600,true);person(680,580,true);person(1050,570,false);policeCar(250,560);policeCar(720,600);}
+ if(s===5){person(470,580,true);person(560,600,true);person(680,580,true);person(1015-p*25,570,false,'hands');policeCar(250,560);policeCar(720,600);}
+ // restrained documentary overlay
+ rect(0,0,1280,58,'#111914b8');
+ ctx.fillStyle='#fff';ctx.font='bold 20px system-ui';ctx.fillText('MONTALBÁN DE CÓRDOBA  ·  NOVIEMBRE DE 2015',28,37);
+ rect(28,650,Math.max(3,1224*(elapsed/72)),5,'#d5dfca');
+ ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.fillText('RECREACIÓN ILUSTRATIVA · '+scenes[s][0].toUpperCase(),28,625);
+ $('caption').textContent='Escena '+(s+1)+' — '+scenes[s][0]+': '+scenes[s][1];
+ [...$('scenes').children].forEach((b,i)=>b.classList.toggle('active',i===s));
+ $('seek').value=elapsed;
+ $('status').textContent=(playing?'Reproduciendo':'En pausa')+' · '+time(elapsed)+' / 01:12';
+}
+function policeCar(x,y){
+ rect(x-55,y-45,110,43,'#36513f');rect(x-37,y-67,74,27,'#4a6554');rect(x-31,y-62,27,19,'#82999a');rect(x+4,y-62,27,19,'#82999a');
+ rect(x-42,y-8,22,15,'#202522');rect(x+23,y-8,22,15,'#202522');rect(x-10,y-71,20,5,'#b94a46');
+}
+function time(t){return String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0')}
+function loop(now){let dt=Math.min((now-last)/1000,.05);last=now;if(playing){elapsed+=dt;if(elapsed>=72){elapsed=72;playing=false;}}draw();requestAnimationFrame(loop)}
+$('play').onclick=()=>{if(elapsed>=72)elapsed=0;playing=true};
+$('pause').onclick=()=>playing=false;
+$('seek').oninput=e=>{playing=false;elapsed=+e.target.value;draw()};
+$('export').onclick=()=>{
+ if(!canvas.captureStream||!window.MediaRecorder){alert('Usa Chrome o Edge para exportar WebM.');return;}
+ if(recording)return;
+ recording=true;elapsed=0;playing=true;
+ const stream=canvas.captureStream(30),mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+ const rec=new MediaRecorder(stream,mime?{mimeType:mime}:undefined),chunks=[];
+ rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{let a=document.createElement('a'),url=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));a.href=url;a.download='reconstruccion-calle-ancha.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);recording=false;$('export').textContent='● Exportar vídeo WebM';};
+ $('export').textContent='Grabando… espera 72 segundos';
+ rec.start(300);let timer=setInterval(()=>{if(!playing&&elapsed>=72){clearInterval(timer);rec.stop();$('export').textContent='● Exportar vídeo WebM';}},200);
+};
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
